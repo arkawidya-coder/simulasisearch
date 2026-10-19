@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualisator Algoritma Pencarian — Logika Pemrograman</title>
+  <meta name="description" content="Aplikasi visualisasi interaktif algoritma Binary Search & Linear Search dengan komparasi visual head-to-head, animasi fluid, dan tabel tracing langkah demi langkah untuk mata kuliah Logika Pemrograman.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="theme-dark">
+  <!-- Confetti Canvas for Celebratory Found Animation -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-badge">
+          <span class="logo-icon" id="algoLogoIcon">🔍</span>
+          <span class="logo-version">OBE 2026</span>
+        </div>
+        <div class="header-title-group">
+          <h1 id="mainTitle">Visualisator Algoritma Pencarian</h1>
+          <p class="subtitle" id="mainSubtitle">Media Pembelajaran Interaktif • Logika &amp; Algoritma Pemrograman</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="badge-complexity" id="headerComplexityBadge">
+          <span class="badge-item"><i class="badge-dot cyan"></i> Waktu: <strong id="timeComplexityText">O(log n)</strong></span>
+          <span class="badge-item"><i class="badge-dot green"></i> Memori: <strong id="spaceComplexityText">O(1)</strong></span>
+        </div>
+        <button id="soundToggle" class="btn-icon" title="Toggle Suara Audio" aria-label="Toggle Suara">
+          <span id="soundIcon">🔊</span>
+        </button>
+        <button id="themeToggle" class="btn-icon" title="Ganti Mode Gelap/Terang" aria-label="Toggle Tema">
+          <span id="themeIcon">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MENU PILIHAN ALGORITMA (NAVIGATION BAR) -->
+    <nav class="algo-menu-bar" aria-label="Pilihan Algoritma">
+      <div class="algo-tabs-container">
+        <button class="algo-tab active" id="tabBinarySearch" data-algo="binary">
+          <span class="tab-icon">⚡</span>
+          <div class="tab-text">
+            <span class="tab-title">Binary Search</span>
+            <span class="tab-desc">O(log n) • Bagi Dua (Data Terurut)</span>
+          </div>
+        </button>
+        <button class="algo-tab" id="tabLinearSearch" data-algo="linear">
+          <span class="tab-icon">🔎</span>
+          <div class="tab-text">
+            <span class="tab-title">Linear Search</span>
+            <span class="tab-desc">O(n) • Berurutan (Data Bebas)</span>
+          </div>
+        </button>
+        <button class="algo-tab tab-duel" id="tabCompare" data-algo="compare">
+          <span class="tab-icon">⚔️</span>
+          <div class="tab-text">
+            <span class="tab-title">Komparasi Visual (Duel Arena)</span>
+            <span class="tab-desc">Balapan Linear vs Binary Langsung!</span>
+          </div>
+        </button>
+      </div>
+      <div class="algo-info-pill" id="algoInfoPill">
+        Mode Aktif: <strong id="activeAlgoBadge">Binary Search</strong>
+      </div>
+    </nav>
+
+    <!-- Control Ribbon / Toolbar -->
+    <section class="toolbar-section">
+      <div class="toolbar-card">
+        <!-- Target Search Form -->
+        <div class="toolbar-group">
+          <label class="group-label" for="targetInput">Nilai Dicari (Target):</label>
+          <div class="target-input-row">
+            <div class="input-glow-wrapper">
+              <input type="number" id="targetInput" value="56" placeholder="Angka..." autocomplete="off">
+              <span class="input-badge">Target</span>
+            </div>
+            <button id="btnSearch" class="btn-primary">
+              <span class="btn-icon-symbol">⚡</span>
+              <span id="btnSearchText">Cari Nilai</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Array Presets & Generators -->
+        <div class="toolbar-group">
+          <label class="group-label" id="arrayConfigLabel">Kustomisasi Array:</label>
+          <div class="array-ctrl-row">
+            <select id="presetSelect" class="form-select">
+              <!-- Dynamically populated based on algorithm -->
+            </select>
+            <button id="btnRandom" class="btn-secondary" title="Buat Deret Angka Acak">
+              <span>🎲 Acak Data</span>
+            </button>
+            <div class="size-control">
+              <span class="size-label">Ukuran: <strong id="sizeDisplay">14</strong></span>
+              <input type="range" id="sizeSlider" min="7" max="22" value="14" step="1">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Custom Input Modal / Drawer (Collapsible) -->
+    <div id="customModal" class="custom-modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modalTitleText">Masukkan Deret Angka Kustom</h3>
+          <button id="btnCloseModal" class="btn-close">&times;</button>
+        </div>
+        <p class="modal-hint" id="modalHintText">Ketik angka dipisahkan koma atau spasi.</p>
+        <textarea id="customArrayInput" placeholder="Contoh: 14, 28, 5, 42, 19, 73, 56, 3" rows="3"></textarea>
+        <div class="modal-footer">
+          <button id="btnApplyCustom" class="btn-primary">Terapkan Array</button>
+          <button id="btnCancelCustom" class="btn-ghost">Batal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         VIEW 1: SINGLE ALGORITHM VIEW (Binary Search OR Linear Search)
+         ======================================================== -->
+    <div id="singleAlgoContainer">
+      <main class="visualizer-stage">
+        <!-- Status & Comparison Banner -->
+        <div class="status-banner" id="statusBanner">
+          <div class="status-lead">
+            <span class="pulse-indicator" id="statusPulse"></span>
+            <span id="statusMessage">Siap memulai pencarian.</span>
+          </div>
+          <div class="comparison-display" id="comparisonDisplay">
+            <div class="comp-box" id="compTargetBox">
+              <span class="comp-label">Target</span>
+              <span class="comp-val" id="compTargetVal">56</span>
+            </div>
+            <div class="comp-operator" id="compOperator">?</div>
+            <div class="comp-box" id="compExaminedBox">
+              <span class="comp-label" id="compExaminedLabel">a[mid]</span>
+              <span class="comp-val" id="compExaminedVal">—</span>
+            </div>
+            <div class="comp-evaluation" id="compEvaluation">Tekan tombol Play atau Step untuk mulai</div>
+          </div>
+        </div>
+
+        <!-- Array Visualization Container -->
+        <div class="array-container-card">
+          <!-- Sub-array Highlight Bar / Range Indicator (Visible for Binary Search) -->
+          <div class="range-indicator-wrapper" id="rangeIndicatorWrapper">
+            <div class="range-bracket" id="rangeBracket" style="left: 0; width: 100%;">
+              <span class="bracket-tag">Jangkauan Aktif: [<span id="rangeLabel">0 .. 13</span>]</span>
+            </div>
+          </div>
+
+          <!-- The Array Blocks -->
+          <div class="array-scroll-area" id="arrayScrollArea">
+            <div class="array-viewport" id="arrayViewport">
+              <!-- Dynamic Array Items Generated by JS -->
+            </div>
+          </div>
+
+          <!-- Pointers Stage (Low, Mid, High for Binary; Scanning Pointer i for Linear) -->
+          <div class="pointers-track" id="pointersTrack">
+            <!-- Binary Search Pointers -->
+            <div class="pointer-wrapper pointer-lo" id="pointerLo">
+              <div class="pointer-stem"></div>
+              <div class="pointer-head">
+                <span class="pointer-arrow">▲</span>
+                <span class="pointer-tag">LOW (lo)</span>
+                <span class="pointer-idx" id="pointerLoIdx">[0]</span>
+              </div>
+            </div>
+            <div class="pointer-wrapper pointer-mid" id="pointerMid">
+              <div class="pointer-stem"></div>
+              <div class="pointer-head">
+                <span class="pointer-arrow">▲</span>
+                <span class="pointer-tag">MID (tengah)</span>
+                <span class="pointer-idx" id="pointerMidIdx">[—]</span>
+              </div>
+            </div>
+            <div class="pointer-wrapper pointer-hi" id="pointerHi">
+              <div class="pointer-stem"></div>
+              <div class="pointer-head">
+                <span class="pointer-arrow">▲</span>
+                <span class="pointer-tag">HIGH (hi)</span>
+                <span class="pointer-idx" id="pointerHiIdx">[13]</span>
+              </div>
+            </div>
+
+            <!-- Linear Search Pointer -->
+            <div class="pointer-wrapper pointer-scan" id="pointerScan" style="display: none;">
+              <div class="pointer-stem"></div>
+              <div class="pointer-head">
+                <span class="pointer-arrow">▲</span>
+                <span class="pointer-tag">INDEKS (i)</span>
+                <span class="pointer-idx" id="pointerScanIdx">[0]</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Element Color Legend -->
+          <div class="visual-legend" id="visualLegend">
+            <!-- Populated dynamically based on algorithm -->
+          </div>
+        </div>
+
+        <!-- Playback Controls Bar -->
+        <div class="playback-bar">
+          <div class="playback-controls">
+            <button id="btnFirst" class="ctrl-btn" title="Lompat ke Awal" aria-label="First Step">
+              <span>⏮</span>
+            </button>
+            <button id="btnPrev" class="ctrl-btn" title="Langkah Sebelumnya (Mundur)" aria-label="Previous Step">
+              <span>◀</span>
+            </button>
+            <button id="btnPlay" class="ctrl-btn primary" title="Jalankan Otomatis / Pause" aria-label="Play/Pause">
+              <span id="playIcon">▶</span>
+              <span id="playText">Putar</span>
+            </button>
+            <button id="btnNext" class="ctrl-btn" title="Langkah Berikutnya (Maju)" aria-label="Next Step">
+              <span>▶</span>
+            </button>
+            <button id="btnLast" class="ctrl-btn" title="Lompat ke Akhir" aria-label="Last Step">
+              <span>⏭</span>
+            </button>
+            <button id="btnReset" class="ctrl-btn danger" title="Reset Ulang Posisi" aria-label="Reset">
+              <span>🔄 Reset</span>
+            </button>
+          </div>
+
+          <!-- Progress Bar & Step Counter -->
+          <div class="playback-progress-wrapper">
+            <div class="progress-labels">
+              <span class="step-counter-text">Langkah: <strong id="currentStepText">0</strong> / <span id="totalStepsText">0</span></span>
+              <span class="progress-percent" id="progressPercent">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Speed Selector -->
+          <div class="speed-control-group">
+            <label for="speedSelect">Kecepatan Animasi:</label>
+            <select id="speedSelect" class="form-select">
+              <option value="0.5">0.5x (Santai)</option>
+              <option value="1" selected>1.0x (Normal)</option>
+              <option value="1.75">1.75x (Cepat)</option>
+              <option value="3">3.0x (Super Cepat)</option>
+            </select>
+          </div>
+        </div>
+      </main>
+
+      <!-- Bottom Detail Section: Tracing Table & Algorithm Synchronizer -->
+      <section class="detail-grid">
+        <!-- Left Column: Detailed Step-by-Step Tracing Table -->
+        <div class="detail-card trace-card">
+          <div class="detail-card-header">
+            <div class="card-title-group">
+              <div class="card-icon cyan-bg" id="tableCardIcon">📋</div>
+              <div>
+                <h3 id="tableTitleText">Tabel Tracing Langkah Demi Langkah (Dry-Run Table)</h3>
+                <p class="card-subtitle">Klik baris tabel untuk melompat langsung ke langkah tersebut di animasi</p>
+              </div>
+            </div>
+            <div class="table-actions">
+              <button id="btnCopyTable" class="btn-sm btn-ghost" title="Salin Tabel ke Clipboard">
+                <span>📋 Salin</span>
+              </button>
+              <button id="btnExportCsv" class="btn-sm btn-ghost" title="Unduh File CSV untuk Laporan">
+                <span>📥 CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive-wrapper">
+            <table class="trace-table" id="traceTable">
+              <thead id="traceTableHead">
+                <!-- Dynamically populated based on active algorithm -->
+              </thead>
+              <tbody id="traceTableBody">
+                <!-- Dynamically Populated Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right Column: Code Synchronizer & Concept Insight -->
+        <div class="detail-card code-card">
+          <div class="detail-card-header">
+            <div class="card-title-group">
+              <div class="card-icon purple-bg">💻</div>
+              <div>
+                <h3 id="codeTitleText">Sinkronisasi Baris Kode Program</h3>
+                <p class="card-subtitle">Baris kode menyala secara otomatis sesuai tahap yang sedang dieksekusi</p>
+              </div>
+            </div>
+            <!-- Language Tabs -->
+            <div class="lang-tabs" id="langTabs">
+              <button class="lang-tab active" data-lang="pseudocode">Pseudocode</button>
+              <button class="lang-tab" data-lang="python">Python</button>
+              <button class="lang-tab" data-lang="cpp">C++</button>
+              <button class="lang-tab" data-lang="java">Java</button>
+            </div>
+          </div>
+
+          <!-- Code Block Viewport -->
+          <div class="code-viewport">
+            <pre class="code-pre"><code id="codeDisplay">
+              <!-- Dynamically populated lines -->
+            </code></pre>
+          </div>
+
+          <!-- Dynamic Step Explanation Card -->
+          <div class="explanation-box" id="explanationBox">
+            <div class="explanation-title">
+              <span class="exp-icon">💡</span>
+              <span id="expStepTitle">Penjelasan Langkah Logika</span>
+            </div>
+            <p id="expStepText">Pilih target angka dan klik tombol "Cari Nilai" atau "Putar" untuk menyaksikan jalannya algoritma.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========================================================
+         VIEW 2: VISUAL COMPARISON ARENA (LINEAR VS BINARY DUEL)
+         ======================================================== -->
+    <div id="compareArenaContainer" class="compare-arena-container hidden">
+      <!-- Duel Header & Scoreboard Banner -->
+      <section class="duel-banner-card">
+        <div class="duel-header-row">
+          <div class="duel-title-box">
+            <div class="duel-badge-pulse">⚔️ DUEL HEAD-TO-HEAD</div>
+            <h2>Perbandingan Kecepatan Pencarian</h2>
+            <p class="duel-subtitle">Melihat secara simultan bagaimana <strong>Binary Search O(log n)</strong> memangkas langkah dibandingkan <strong>Linear Search O(n)</strong> pada dataset yang sama persis.</p>
+          </div>
+          <!-- Live Match Scoreboard -->
+          <div class="duel-scoreboard">
+            <div class="score-card score-linear">
+              <span class="score-label">🔎 LINEAR SEARCH</span>
+              <span class="score-steps" id="duelLinearStepsCount">0</span>
+              <span class="score-unit">Perbandingan Langkah</span>
+              <span class="score-status" id="duelLinearStatus">Menunggu...</span>
+            </div>
+            <div class="score-vs">VS</div>
+            <div class="score-card score-binary">
+              <span class="score-label">⚡ BINARY SEARCH</span>
+              <span class="score-steps" id="duelBinaryStepsCount">0</span>
+              <span class="score-unit">Perbandingan Langkah</span>
+              <span class="score-status" id="duelBinaryStatus">Menunggu...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric Difference & Efficiency Gauge -->
+        <div class="duel-metrics-bar">
+          <div class="metric-progress-group">
+            <div class="metric-label-row">
+              <span class="metric-name">Rasio Efisiensi Langkah:</span>
+              <strong id="duelEfficiencyVerdict">Siap memulai balapan komparasi</strong>
+            </div>
+            <div class="metric-comparison-track">
+              <div class="metric-bar-fill binary-bar" id="metricBarBinary" style="width: 50%;">Binary: 0</div>
+              <div class="metric-bar-fill linear-bar" id="metricBarLinear" style="width: 50%;">Linear: 0</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dual Race Tracks -->
+      <section class="duel-tracks-grid">
+        <!-- Track 1: Linear Search -->
+        <div class="duel-track-card track-linear">
+          <div class="track-header">
+            <div class="track-title-wrap">
+              <span class="track-icon">🔎</span>
+              <div>
+                <h4>Jalur 1: Linear Search (O(n))</h4>
+                <p class="track-meta">Memeriksa elemen satu per satu dari indeks 0 sampai target ketemu.</p>
+              </div>
+            </div>
+            <div class="track-badge badge-amber" id="trackBadgeLinear">Berurutan</div>
+          </div>
+
+          <!-- Linear Track Visual Viewport -->
+          <div class="track-array-scroll">
+            <div class="array-viewport" id="duelLinearViewport">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Linear Pointer Track -->
+          <div class="pointers-track" id="duelLinearPointersTrack">
+            <div class="pointer-wrapper pointer-scan" id="duelPointerLinear">
+              <div class="pointer-stem"></div>
+              <div class="pointer-head">
+                <span class="pointer-arrow">▲</span>
+                <span class="pointer-tag">i</span>
+                <span class="pointer-idx" id="duelPointerLinearIdx">[0]</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step Mini-Log -->
+          <div class="track-mini-log">
+            <span class="mini-log-tag">Aksi Sekarang:</span>
+            <span class="mini-log-text" id="duelLinearMiniLog">Menunggu balapan dimulai...</span>
+          </div>
+        </div>
+
+        <!-- Track 2: Binary Search -->
+        <div class="duel-track-card track-binary">
+          <div class="track-header">
+            <div class="track-title-wrap">
+              <span class="track-icon">⚡</span>
+              <div>
+                <h4>Jalur 2: Binary Search (O(log n))</h4>
+                <p class="track-meta">Memotong separuh deret data yang tidak mungkin di setiap langkah.</p>
+              </div>
+            </div>
+            <div class="track-badge badge-cyan" id="trackBadgeBinary">Bagi Dua</div>
+          </div>
+
+          <!-- Binary Track Visual Viewport -->
+          <div class="track-array-scroll">
+            <div class="array-viewport" id="duelBinaryViewport">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Binary Pointer Track -->
+          <div class="pointers-track" id="duelBinaryPointersTrack">
+            <div class="pointer-wrapper pointer-lo" id="duelPointerLo">
+              <div class="pointer-stem"></div>
+              <div class="pointer-head">
+                <span class="pointer-arrow">▲</span>
+                <span class="pointer-tag">lo</span>
+                <span class="pointer-idx" id="duelPointerLoIdx">[0]</span>
+              </div>
+            </div>
+            <div class="pointer-wrapper pointer-mid" id="duelPointerMid">
+              <div class="pointer-stem"></div>
+              <div class="pointer-head">
+                <span class="pointer-arrow">▲</span>
+                <span class="pointer-tag">mid</span>
+                <span class="pointer-idx" id="duelPointerMidIdx">[—]</span>
+              </div>
+            </div>
+            <div class="pointer-wrapper pointer-hi" id="duelPointerHi">
+              <div class="pointer-stem"></div>
+              <div class="pointer-head">
+                <span class="pointer-arrow">▲</span>
+                <span class="pointer-tag">hi</span>
+                <span class="pointer-idx" id="duelPointerHiIdx">[—]</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step Mini-Log -->
+          <div class="track-mini-log">
+            <span class="mini-log-tag">Aksi Sekarang:</span>
+            <span class="mini-log-text" id="duelBinaryMiniLog">Menunggu balapan dimulai...</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Duel Playback Controls Bar -->
+      <div class="playback-bar duel-playback-bar">
+        <div class="playback-controls">
+          <button id="btnDuelFirst" class="ctrl-btn" title="Lompat ke Awal Duel" aria-label="First Duel Step">
+            <span>⏮</span>
+          </button>
+          <button id="btnDuelPrev" class="ctrl-btn" title="Mundur 1 Langkah Bersama" aria-label="Previous Duel Step">
+            <span>◀</span>
+          </button>
+          <button id="btnDuelPlay" class="ctrl-btn primary duel-play-btn" title="Mulai Balapan / Jeda" aria-label="Play Duel">
+            <span id="duelPlayIcon">▶</span>
+            <span id="duelPlayText">Mulai Balapan Duel</span>
+          </button>
+          <button id="btnDuelNext" class="ctrl-btn" title="Maju 1 Langkah Bersama" aria-label="Next Duel Step">
+            <span>▶</span>
+          </button>
+          <button id="btnDuelLast" class="ctrl-btn" title="Lompat ke Garis Akhir" aria-label="Last Duel Step">
+            <span>⏭</span>
+          </button>
+          <button id="btnDuelReset" class="ctrl-btn danger" title="Reset Ulang Balapan" aria-label="Reset Duel">
+            <span>🔄 Reset Balapan</span>
+          </button>
+        </div>
+
+        <div class="playback-progress-wrapper">
+          <div class="progress-labels">
+            <span class="step-counter-text">Tahap Balapan: <strong id="duelCurrentStepText">0</strong> / <span id="duelTotalStepsText">0</span></span>
+            <span class="progress-percent" id="duelProgressPercent">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="duelProgressFill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="speed-control-group">
+          <label for="duelSpeedSelect">Kecepatan Balapan:</label>
+          <select id="duelSpeedSelect" class="form-select">
+            <option value="0.5">0.5x (Santai)</option>
+            <option value="1" selected>1.0x (Normal)</option>
+            <option value="1.75">1.75x (Cepat)</option>
+            <option value="3">3.0x (Super Cepat)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Head-to-Head Comparison Table -->
+      <section class="detail-card">
+        <div class="detail-card-header">
+          <div class="card-title-group">
+            <div class="card-icon amber-bg">📊</div>
+            <div>
+              <h3>Tabel Komparasi Head-to-Head per Tahap</h3>
+              <p class="card-subtitle">Perbandingan langsung apa yang dilakukan Linear Search vs Binary Search di setiap langkah waktu</p>
+            </div>
+          </div>
+          <div class="table-actions">
+            <button id="btnCopyDuelTable" class="btn-sm btn-ghost" title="Salin Tabel Komparasi">
+              <span>📋 Salin</span>
+            </button>
+            <button id="btnExportDuelCsv" class="btn-sm btn-ghost" title="Unduh CSV Komparasi">
+              <span>📥 CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive-wrapper">
+          <table class="trace-table duel-table" id="duelTable">
+            <thead>
+              <tr>
+                <th style="width: 80px;">Langkah</th>
+                <th>🔎 Linear Search: Pemeriksaan</th>
+                <th>Status Linear</th>
+                <th>⚡ Binary Search: Jangkauan &amp; Mid</th>
+                <th>Status Binary</th>
+                <th>Keunggulan Komparatif</th>
+              </tr>
+            </thead>
+            <tbody id="duelTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Educational Deep-Dive: Math & Complexity Comparison -->
+    <section class="education-section">
+      <div class="edu-grid" id="educationCardsGrid">
+        <!-- Populated dynamically based on active algorithm and comparative analysis -->
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>Dibuat untuk praktikum &amp; materi perkuliahan <strong>Logika Pemrograman</strong> • Prodi Teknik Informatika</p>
+      <p class="footer-note">Dilengkapi Simulasi Animasi Interaktif, Trace Table OBE, dan Sinkronisasi Pseudocode (Binary &amp; Linear Search).</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
